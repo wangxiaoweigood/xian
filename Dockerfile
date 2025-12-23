@@ -1,20 +1,27 @@
-FROM node:18-alpine
+FROM node:18-alpine AS build
 
 WORKDIR /app
-
-# Copy package files first to leverage layer caching
 COPY package.json package-lock.json* ./
-
-# Install production dependencies
-RUN npm install --production
-
-# Copy app source
+RUN npm ci --only=production
 COPY . .
 
-# Expose the port the app listens on
+FROM node:18-alpine AS runtime
+WORKDIR /app
+COPY --from=build /app . 
+
+# Install curl for healthcheck and create non-root user
+RUN apk add --no-cache curl \
+ && addgroup -S appgroup \
+ && adduser -S appuser -G appgroup
+
+USER appuser
+
+ENV NODE_ENV=production
 EXPOSE 3000
 
-# Run the server
+# Healthcheck uses HTTP root path (server.js responds with 200)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s CMD curl -sf http://localhost:3000/ || exit 1
+
 CMD ["node", "server.js"]
 
 
