@@ -518,6 +518,105 @@
                     setTimeout(aiMove, 300);
                 }
             });
+            // --- Online multiplayer via WebSocket ---
+            const onlineBtn = document.createElement('button');
+            onlineBtn.id = 'onlineBtn';
+            onlineBtn.className = 'btn';
+            onlineBtn.textContent = '在线: 关';
+            document.querySelector('.controls').appendChild(onlineBtn);
+
+            let ws = null;
+            let onlineRoom = null;
+            let onlineSide = null;
+            function connectOnline(){
+                const url = prompt('输入 WebSocket 服务器地址（例如 ws://localhost:3000 或 ws://yourdomain:3000）', window.location.hostname === 'localhost' ? 'ws://localhost:3000' : ('wss://' + window.location.host));
+                if (!url) return;
+                ws = new WebSocket(url);
+                ws.addEventListener('open', ()=> {
+                    onlineBtn.textContent = '在线: 匹配中';
+                    ws.send(JSON.stringify({ type:'join' }));
+                });
+                ws.addEventListener('message', (ev)=>{
+                    const d = JSON.parse(ev.data);
+                    if (d.type === 'queued') {
+                        statusEl.textContent = '已排队，等待对手...';
+                    } else if (d.type === 'start'){
+                        onlineRoom = d.room;
+                        onlineSide = d.side;
+                        // set board to server board
+                        for (let i=0;i<9;i++) board[i] = d.board[i];
+                        drawAllMarks();
+                        turn = d.turn;
+                        turnEl.textContent = turn;
+                        onlineBtn.textContent = '在线: 已连接';
+                        statusEl.textContent = '已连上对手，您是 ' + onlineSide;
+                    } else if (d.type === 'opponent_move'){
+                        // apply opponent move
+                        const side = d.side;
+                        board[d.from] = null;
+                        board[d.to] = side;
+                        drawAllMarks();
+                        turn = (side === 'X') ? 'O' : 'X';
+                        turnEl.textContent = turn;
+                    } else if (d.type === 'turn'){
+                        turn = d.turn;
+                        turnEl.textContent = turn;
+                    } else if (d.type === 'game_over'){
+                        winner = d.winner;
+                        highlightWin(d.line);
+                        statusEl.innerHTML = '胜利: <strong>' + winner + '</strong>';
+                    } else if (d.type === 'opponent_left'){
+                        statusEl.textContent = '对手已离开';
+                        onlineBtn.textContent = '在线: 离线';
+                    } else if (d.type === 'error'){
+                        console.warn('server error', d);
+                    }
+                });
+                ws.addEventListener('close', ()=> {
+                    statusEl.textContent = '与服务器断开连接';
+                    onlineBtn.textContent = '在线: 关';
+                    ws = null;
+                    onlineRoom = null;
+                    onlineSide = null;
+                });
+            }
+            onlineBtn.addEventListener('click', ()=>{
+                if (!ws){
+                    connectOnline();
+                } else {
+                    try { ws.send(JSON.stringify({ type:'leave' })); ws.close(); } catch(e){}
+                }
+            });
+
+            // override local move sending when online
+            const originalHandleNodeClick = handleNodeClick;
+            function handleNodeClickOnline(i){
+                if (!ws || !onlineRoom || !onlineSide) {
+                    originalHandleNodeClick(i);
+                    return;
+                }
+                // only allow selecting/moving your side
+                const cell = board[i];
+                if (cell === onlineSide){
+                    // select/deselect locally (same UI)
+                    if (selected === i) selected = null; else selected = i;
+                    updateSelectionVisual();
+                    return;
+                }
+                if (cell === null && selected !== null){
+                    const allowed = getAllowedTargets(selected);
+                    if (!allowed.includes(i)) { flashInvalid(); return; }
+                    // send move to server
+                    ws.send(JSON.stringify({ type:'move', room: onlineRoom, from: selected, to: i }));
+                }
+            }
+            // swap event listeners to use online-aware handler
+            nodes.forEach((n, idx) => {
+                n.replaceWith(n.cloneNode(true));
+            });
+            // re-query nodes and rebind with online-aware click
+            const newNodes = Array.from(document.querySelectorAll('.node-area'));
+            newNodes.forEach(n => n.addEventListener('click', ()=> handleNodeClickOnline(parseInt(n.getAttribute('data-index'),10))));
             // color pickers for accent (米字线) and primary (highlights)
             const accentPicker = document.getElementById('accentPicker');
             const primaryPicker = document.getElementById('primaryPicker');

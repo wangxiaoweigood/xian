@@ -19,7 +19,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v1
+        # use the latest upload-pages-artifact version to avoid internal use of deprecated upload-artifact v3
+        uses: actions/upload-pages-artifact@v2
         with:
           path: .
 
