@@ -1,0 +1,18 @@
+# Render manifest to create a Web Service for the Node WebSocket server
+# When you connect your GitHub repo to Render and select "Deploy from render.yaml",
+# Render will create the service automatically based on this file.
+
+services:
+  - type: web
+    name: mige-websocket-server
+    env: docker
+    repo: wangxiaoweigood/xian
+    branch: main
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    plan: free
+    buildCommand: ""
+    startCommand: "node server.js"
+    autoDeploy: true
+
+

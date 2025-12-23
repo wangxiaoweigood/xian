@@ -1,10 +1,22 @@
 // Simple WebSocket server for pairing two players and relaying moves
 // Usage: node server.js
 
+const http = require('http');
 const WebSocket = require('ws');
 const port = process.env.PORT || 3000;
-const wss = new WebSocket.Server({ port });
-console.log('WebSocket server listening on port', port);
+
+// Create a minimal HTTP server so plain HTTP GETs (health checks / browser visits)
+// get a friendly response instead of "Upgrade Required". This also allows platforms
+// like Render to probe the endpoint with an HTTP request.
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('米字三子连线 WebSocket server');
+});
+
+const wss = new WebSocket.Server({ server });
+server.listen(port, () => {
+  console.log('HTTP+WebSocket server listening on port', port);
+});
 
 const initialBoard = ['X','X','X', null, null, null, 'O','O','O'];
 
