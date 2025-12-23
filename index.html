@@ -7,13 +7,14 @@
     <title>米格 的 盒子</title>
     <style>
         :root{
-            --bg:#f1f5f9;
+            --bg:#f6f9fc;
             --card:#ffffff;
             --accent:#e53935;
             --muted:#6b7280;
-            --primary:#2b8cff;
+            --primary:#1e88ff;
             --success:#27ae60;
-            --text:#111827;
+            --text:#0f1724;
+            --glass: rgba(255,255,255,0.7);
         }
         html, body {
             height:100%;
@@ -31,21 +32,24 @@
         .app {
             width: min(780px, 96%);
             max-width: 920px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.9));
+            background: linear-gradient(180deg, var(--glass), rgba(255,255,255,0.95));
             border-radius:14px;
-            box-shadow: 0 8px 30px rgba(16,24,40,0.08);
+            box-shadow: 0 10px 30px rgba(16,24,40,0.08);
             padding:18px;
+            border: 1px solid rgba(16,24,40,0.04);
         }
         .header {
             display:flex;
             align-items:center;
             justify-content:space-between;
             margin-bottom:12px;
+            gap:12px;
         }
         .title {
-            font-size:18px;
-            font-weight:700;
+            font-size:20px;
+            font-weight:800;
             color:var(--text);
+            letter-spacing:0.2px;
         }
         .controls {
             display:flex;
@@ -53,22 +57,30 @@
             align-items:center;
         }
         .status {
-            font-size:15px;
+            font-size:14px;
             color:var(--muted);
+            background: linear-gradient(90deg, rgba(255,255,255,0.4), rgba(255,255,255,0.2));
+            padding:6px 10px;
+            border-radius:8px;
+            border:1px solid rgba(16,24,40,0.03);
         }
         .btn {
             padding:8px 12px;
             background:var(--card);
-            border-radius:8px;
+            border-radius:10px;
             border:1px solid rgba(16,24,40,0.06);
             cursor:pointer;
-            font-weight:600;
+            font-weight:700;
             color:var(--text);
+            transition: all .16s ease;
+            box-shadow: 0 2px 6px rgba(16,24,40,0.04);
         }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(16,24,40,0.08); }
         .btn.primary {
             background:var(--primary);
             color:#fff;
             border-color:transparent;
+            box-shadow: 0 6px 20px rgba(30,136,255,0.18);
         }
         .scene {
             display:flex;
@@ -86,9 +98,12 @@
         svg { width:100%; height:auto; display:block; }
         /* node/mark styles */
         .node-area { transition: all .12s ease; }
-        .node-area.possible { fill: rgba(43,140,255,0.10); stroke:var(--primary); stroke-width:3; }
-        .mark.selected { stroke:#f1c40f; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12)); transform-origin:center; }
-        .mark { stroke:#111827; }
+        .node-area:hover { fill: rgba(30,136,255,0.06); }
+        .node-area.possible { fill: rgba(30,136,255,0.12); stroke:var(--primary); stroke-width:3; }
+        .mark.selected { stroke:#f1c40f; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12)); transform-origin:center; transform: scale(1.02); }
+        .mark { stroke:#0f1724; }
+        .mark line { stroke-linecap:round; stroke-linejoin:round; }
+        .mark circle { stroke:var(--primary); stroke-width:6; fill:none; }
         .win { stroke:var(--success) !important; filter: drop-shadow(0 6px 14px rgba(39,174,96,0.18)); }
         .node-label { font-size:12px; fill:var(--muted); text-anchor:middle; dominant-baseline:hanging; pointer-events:none; user-select:none; }
         /* responsive */
@@ -99,12 +114,16 @@
         /* mobile adjustments */
         @media (max-width:420px){
             .app { padding:12px; border-radius:12px; }
-            .header { flex-direction:column; align-items:flex-start; gap:8px; }
-            .controls { width:100%; justify-content:space-between; }
-            .status { font-size:14px; }
-            .btn { padding:10px 14px; font-size:15px; border-radius:10px; }
-            .board-wrap { width:100%; }
+            .header { flex-direction:column; align-items:stretch; gap:10px; }
+            .controls { display:flex; flex-direction:column; gap:10px; align-items:stretch; width:100%; }
+            .controls > * { width:100%; }
+            .status { font-size:14px; padding:8px 10px; text-align:left; }
+            .btn { padding:12px 14px; font-size:15px; border-radius:10px; width:100%; }
+            .board-wrap { width:100%; margin-top:6px; }
             .node-label { font-size:11px; }
+            /* make color pickers align neatly on mobile */
+            .controls input[type="color"]{ width:44px; height:36px; padding:0; }
+            .controls div { display:flex; gap:8px; align-items:center; justify-content:flex-start; flex-wrap:wrap; }
         }
     </style>
 </head>
@@ -117,6 +136,12 @@
                 <div id="status" class="status">轮到: <strong id="turn">X</strong></div>
                 <button id="resetBtn" class="btn">重置</button>
                 <button id="aiBtn" class="btn">AI: 关</button>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <label for="accentPicker" style="font-size:12px;color:var(--muted);">线色</label>
+                    <input id="accentPicker" type="color" title="米字线颜色" style="width:36px;height:36px;border-radius:8px;border:0;padding:0"/>
+                    <label for="primaryPicker" style="font-size:12px;color:var(--muted);margin-left:6px;">高亮</label>
+                    <input id="primaryPicker" type="color" title="高亮/圈色" style="width:36px;height:36px;border-radius:8px;border:0;padding:0"/>
+                </div>
             </div>
         </div>
 
@@ -127,20 +152,21 @@
                 <style>
                     .sketch {
                         fill: none;
-                        stroke: #e53935;
-                        stroke-width: 6;
+                        stroke: var(--accent);
+                        stroke-width: 10;
                         stroke-linecap: round;
                         stroke-linejoin: round;
-                        vector-effect: non-scaling-stroke;
+                        vector-effect:non-scaling-stroke;
+                        opacity:0.98;
                     }
-                    .node-area { fill: transparent; cursor: pointer; pointer-events: all; }
+                    .node-area { fill: transparent; cursor: pointer; pointer-events: all; transition: fill .12s ease; }
                     #marks { pointer-events: none; }
-                    .node-area.possible { fill: rgba(43,140,255,0.08); stroke:#2b8cff; stroke-width:3; }
-                    .mark { stroke:#222; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; pointer-events: none; }
-                    .mark.selected { stroke:#f1c40f; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.12)); }
-                    .mark circle { fill: none; }
-                    .win { stroke:#27ae60 !important; }
-                    .node-label { font-size:12px; fill:#666; text-anchor:middle; dominant-baseline:hanging; pointer-events:none; user-select:none; }
+                    .node-area.possible { fill: rgba(30,136,255,0.12); stroke:var(--primary); stroke-width:3; }
+                    .mark { stroke:var(--text); stroke-width:8; stroke-linecap:round; stroke-linejoin:round; pointer-events: none; }
+                    .mark.selected { stroke:#f1c40f; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.12)); transform-origin:center; }
+                    .mark circle { fill: none; stroke:var(--primary); stroke-width:6; }
+                    .win { stroke:var(--success) !important; }
+                    .node-label { font-size:12px; fill:var(--muted); text-anchor:middle; dominant-baseline:hanging; pointer-events:none; user-select:none; }
                 </style>
             </defs>
 
@@ -158,26 +184,26 @@
             <!-- 9 节点（3x3）中心点，便于三子连线规则与点击 -->
             <!-- indices: 0..8 left->right, top->bottom -->
             <g id="nodes">
-                <circle class="node-area" data-index="0" cx="60" cy="60" r="28"></circle>
-                <text class="node-label" x="60" y="86">1</text>
-                <circle class="node-area" data-index="1" cx="210" cy="60" r="28"></circle>
-                <text class="node-label" x="210" y="86">2</text>
-                <circle class="node-area" data-index="2" cx="360" cy="60" r="28"></circle>
-                <text class="node-label" x="360" y="86">3</text>
+                <circle class="node-area" data-index="0" cx="36" cy="40" r="28"></circle>
+                <text class="node-label" x="36" y="66">1</text>
+                <circle class="node-area" data-index="1" cx="210" cy="40" r="28"></circle>
+                <text class="node-label" x="210" y="66">2</text>
+                <circle class="node-area" data-index="2" cx="384" cy="40" r="28"></circle>
+                <text class="node-label" x="384" y="66">3</text>
 
-                <circle class="node-area" data-index="3" cx="60" cy="160" r="28"></circle>
-                <text class="node-label" x="60" y="186">4</text>
+                <circle class="node-area" data-index="3" cx="36" cy="160" r="28"></circle>
+                <text class="node-label" x="36" y="186">4</text>
                 <circle class="node-area" data-index="4" cx="210" cy="160" r="28"></circle>
                 <text class="node-label" x="210" y="186">5</text>
-                <circle class="node-area" data-index="5" cx="360" cy="160" r="28"></circle>
-                <text class="node-label" x="360" y="186">6</text>
+                <circle class="node-area" data-index="5" cx="384" cy="160" r="28"></circle>
+                <text class="node-label" x="384" y="186">6</text>
 
-                <circle class="node-area" data-index="6" cx="60" cy="260" r="28"></circle>
-                <text class="node-label" x="60" y="286">7</text>
-                <circle class="node-area" data-index="7" cx="210" cy="260" r="28"></circle>
-                <text class="node-label" x="210" y="286">8</text>
-                <circle class="node-area" data-index="8" cx="360" cy="260" r="28"></circle>
-                <text class="node-label" x="360" y="286">9</text>
+                <circle class="node-area" data-index="6" cx="36" cy="280" r="28"></circle>
+                <text class="node-label" x="36" y="306">7</text>
+                <circle class="node-area" data-index="7" cx="210" cy="280" r="28"></circle>
+                <text class="node-label" x="210" y="306">8</text>
+                <circle class="node-area" data-index="8" cx="384" cy="280" r="28"></circle>
+                <text class="node-label" x="384" y="306">9</text>
             </g>
 
             <!-- container for marks -->
@@ -194,8 +220,7 @@
                 [0,4,8], // diagonal TL-BR
                 [2,4,6]  // diagonal TR-BL
             ];
-            // Lines along which movement is allowed: any straight line through the grid
-            // (rows, columns, both main diagonals)
+            // Lines along which movement is allowed: rows, columns and the two main diagonals
             const moveLines = [
                 [0,1,2],
                 [3,4,5],
@@ -249,25 +274,18 @@
             // for the selected node, gather every straight line (rows/cols/diagonals in moveLines) that contains it,
             // then any empty node on those lines is a valid target (no blocking checks).
             function getAllowedTargets(sel){
+                // Only allow moving one step along any allowed line (no multi-step moves).
                 if (sel === null) return [];
                 const allowed = new Set();
                 for (const line of moveLines){
                     const pos = line.indexOf(sel);
                     if (pos === -1) continue;
-                    for (let j = 0; j < line.length; j++){
-                        const idx = line[j];
-                        if (idx === sel) continue;
-                        // target must be empty
-                        if (board[idx] !== null) continue;
-                        // check intermediate nodes between pos and j; if any occupied => blocked
-                        const start = Math.min(pos, j) + 1;
-                        const end = Math.max(pos, j) - 1;
-                        let blocked = false;
-                        for (let k = start; k <= end; k++){
-                            const midIdx = line[k];
-                            if (board[midIdx] !== null) { blocked = true; break; }
-                        }
-                        if (!blocked) allowed.add(idx);
+                    // neighbor positions are pos-1 and pos+1 if within bounds
+                    const neighbors = [];
+                    if (pos - 1 >= 0) neighbors.push(line[pos - 1]);
+                    if (pos + 1 < line.length) neighbors.push(line[pos + 1]);
+                    for (const idx of neighbors){
+                        if (board[idx] === null) allowed.add(idx);
                     }
                 }
                 return Array.from(allowed);
@@ -500,6 +518,42 @@
                     setTimeout(aiMove, 300);
                 }
             });
+            // color pickers for accent (米字线) and primary (highlights)
+            const accentPicker = document.getElementById('accentPicker');
+            const primaryPicker = document.getElementById('primaryPicker');
+            function hexToRgb(hex){
+                const h = hex.replace('#','');
+                return [parseInt(h.substring(0,2),16), parseInt(h.substring(2,4),16), parseInt(h.substring(4,6),16)];
+            }
+            function setCSSVar(name, value){ document.documentElement.style.setProperty(name, value); }
+            // initialize pickers from current CSS variables or defaults
+            const rootStyle = getComputedStyle(document.documentElement);
+            const currentAccent = rootStyle.getPropertyValue('--accent').trim() || '#e53935';
+            const currentPrimary = rootStyle.getPropertyValue('--primary').trim() || '#1e88ff';
+            accentPicker.value = currentAccent;
+            primaryPicker.value = currentPrimary;
+            accentPicker.addEventListener('input', (e)=>{
+                const v = e.target.value;
+                setCSSVar('--accent', v);
+            });
+            primaryPicker.addEventListener('input', (e)=>{
+                const v = e.target.value;
+                setCSSVar('--primary', v);
+                // also update mark circle stroke to match primary
+                document.querySelectorAll('.mark circle').forEach(c => c.setAttribute('stroke', v));
+            });
+            // persist choices
+            [accentPicker, primaryPicker].forEach(inp => {
+                inp.addEventListener('change', ()=>{
+                    localStorage.setItem('mi_accent', accentPicker.value);
+                    localStorage.setItem('mi_primary', primaryPicker.value);
+                });
+            });
+            // load persisted
+            const savedAccent = localStorage.getItem('mi_accent');
+            const savedPrimary = localStorage.getItem('mi_primary');
+            if (savedAccent) { accentPicker.value = savedAccent; setCSSVar('--accent', savedAccent); }
+            if (savedPrimary) { primaryPicker.value = savedPrimary; setCSSVar('--primary', savedPrimary); document.querySelectorAll('.mark circle').forEach(c => c.setAttribute('stroke', savedPrimary)); }
 
             function reset(){
                 // restore initial configuration: top row X, bottom row O
